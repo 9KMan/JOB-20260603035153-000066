@@ -2,6 +2,10 @@
 
 Production-ready project — see SPEC.md for full documentation.
 
+
+## Business Problem Solved
+
+[filled from SPEC.md §1 — describe the business problem this solves, who benefits, and why it matters]
 ## Architecture
 [Describe the system architecture — inputs, processing layers, outputs]
 
