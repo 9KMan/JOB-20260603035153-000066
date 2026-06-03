@@ -1,49 +1,42 @@
 # syntax=docker/dockerfile:1.7
-ARG PYTHON_VERSION=3.11.9
+ARG PYTHON_VERSION=3.12
+ARG POETRY_VERSION=1.8.4
 
-FROM python:${PYTHON_VERSION}-slim-bookworm AS base
-
+# ---------- builder ----------
+FROM python:${PYTHON_VERSION}-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    DJANGO_SETTINGS_MODULE=config.settings.production
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-WORKDIR /app
+WORKDIR /build
 
-# System dependencies for psycopg, pandas, and Openpyxl
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        libgeos-dev \
-        curl \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies separately for better layer caching
-COPY requirements/ /app/requirements/
-RUN pip install --upgrade pip \
-    && pip install -r requirements/production.txt
+COPY requirements.txt ./
+RUN pip install --prefix=/install -r requirements.txt
 
-# Copy application code
-COPY . /app
+# ---------- runtime ----------
+FROM python:${PYTHON_VERSION}-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.local/bin:${PATH}"
 
-# Create non-root user
-RUN groupadd --system --gid 1000 fdd \
-    && useradd --system --uid 1000 --gid fdd --create-home --shell /bin/bash fdd \
-    && mkdir -p /app/staticfiles /app/media /var/lib/fdd/staging \
-    && chown -R fdd:fdd /app /var/lib/fdd
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash --uid 1000 app
 
-USER fdd
+WORKDIR /app
+COPY --from=builder /install /usr/local
+COPY --chown=app:app . /app
 
+USER app
 EXPOSE 8000
 
-# Default command runs the WSGI server; override in compose for worker/beat
-CMD ["gunicorn", "config.wsgi:application", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "3", \
-     "--worker-class", "gevent", \
-     "--worker-connections", "1000", \
-     "--timeout", "120", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl --fail --silent http://localhost:8000/health/ || exit 1
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--workers", "2"]

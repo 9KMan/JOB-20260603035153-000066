@@ -1,49 +1,30 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Distribution / packaging
-.Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
-# Virtual environments
+# Environment
 .env
 .env.local
 .env.*.local
-venv/
-env/
-.venv/
-ENV/
-
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
-.coverage
-coverage.xml
-htmlcov/
-.pytest_cache/
-.cache
 
 # IDE
 .idea/
@@ -51,17 +32,12 @@ htmlcov/
 *.swp
 *.swo
 .DS_Store
-Thumbs.db
 
-# Docker
-.docker/
+# Logs
+logs/
+*.log
 
-# Secrets / staging data
-staging/
-*.csv.gz
-*.xlsx
-!docs/**/*.xlsx
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
+# Database
+*.db
+*.sqlite
+*.sqlite3
